@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,9 +17,9 @@ import (
 )
 
 type Todo struct {
-	Id       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Complete bool               `json:"complete"`
-	Body     string             `json:"body"`
+	Id        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Completed bool               `json:"complete"`
+	Body      string             `json:"body"`
 }
 
 var collection *mongo.Collection
@@ -54,10 +55,22 @@ func main() {
 
 	app := fiber.New()
 
+	//app.Use(cors.New(cors.Config{
+	//	AllowOrigins:     []string{"http://localhost:5173"},
+	//	AllowHeaders:     []string{"Origin, Content-Type, Accept"},
+	//	AllowMethods:     []string{"GET, POST, PUT, DELETE, PATCH, OPTIONS"}, // 🔥 اینجا PATCH رو اضافه کردیم
+	//	AllowCredentials: true,
+	//}))
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"http://localhost:5173"},
+		AllowHeaders: []string{"Origin,Content-Type,Accept"},
+	}))
+
 	app.Get("/api/todos", GetTodos)
-	app.Post("/api/todo", CreateTodo)
-	app.Patch("/api/todo/:id", UpdateTodo)
-	app.Delete("/api/todo/:id", DeleteTodo)
+	app.Post("/api/todos", CreateTodo)
+	app.Patch("/api/todos/:id", UpdateTodo)
+	app.Delete("/api/todos/:id", DeleteTodo)
 
 	port := os.Getenv("PORT")
 
@@ -110,24 +123,108 @@ func CreateTodo(c fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(todo)
 }
 
+//func UpdateTodo(c fiber.Ctx) error {
+//	id := c.Params("id")
+//	objectID, err := primitive.ObjectIDFromHex(id)
+//
+//	if err != nil {
+//		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid todo ID"})
+//	}
+//
+//	filter := bson.M{"_id": objectID}
+//	update := bson.M{"$set": bson.M{"complete": true}}
+//
+//	result, err := collection.UpdateOne(context.Background(), filter, update)
+//	if err != nil {
+//		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+//	}
+//
+//	if result.ModifiedCount == 0 {
+//		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Todo not found"})
+//	}
+//
+//	updatedTodo := bson.M{}
+//	err = collection.FindOne(context.Background(), filter).Decode(&updatedTodo)
+//	if err != nil {
+//		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+//	}
+//
+//	return c.Status(http.StatusOK).JSON(updatedTodo)
+//}
+
+//func UpdateTodo(c fiber.Ctx) error {
+//	id := c.Params("id")
+//	fmt.Println("Received ID:", id) // لاگ برای ID دریافتی
+//
+//	objectID, err := primitive.ObjectIDFromHex(id)
+//	if err != nil {
+//		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid todo ID"})
+//	}
+//
+//	filter := bson.M{"_id": objectID}
+//	update := bson.M{"$set": bson.M{"completed": true}}
+//
+//	result, err := collection.UpdateOne(context.Background(), filter, update)
+//	if err != nil {
+//		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+//	}
+//
+//	if result.MatchedCount == 0 {
+//		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Todo not found"})
+//	}
+//	// دریافت اطلاعات به‌روز شده
+//	updatedTodo := bson.M{}
+//	err = collection.FindOne(context.Background(), filter).Decode(&updatedTodo)
+//	if err != nil {
+//		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+//	}
+//
+//	return c.Status(http.StatusOK).JSON(updatedTodo)
+//}
+
 func UpdateTodo(c fiber.Ctx) error {
-
 	id := c.Params("id")
-	objectID, err := primitive.ObjectIDFromHex(id)
+	fmt.Println("Received ID:", id) // لاگ برای ID دریافتی
 
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid todo ID"})
 	}
 
-	filter := bson.M{"_id": objectID}
-	update := bson.M{"$set": bson.M{"completed": "true"}}
-
-	_, err = collection.UpdateOne(context.Background(), filter, update)
+	// ابتدا داده‌ی فعلی را از دیتابیس می‌خوانیم تا مقدار complete را بررسی کنیم
+	var todo bson.M
+	err = collection.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&todo)
 	if err != nil {
-		return err
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Todo not found"})
 	}
 
-	return c.Status(http.StatusOK).JSON(fiber.Map{"success": "true"})
+	// اگر complete == true، آن را به false تغییر بدهیم و برعکس
+	newCompleteStatus := false
+	if todo["completed"] != nil && todo["completed"].(bool) == false {
+		newCompleteStatus = true
+	}
+
+	// حالا آپدیت کردن وضعیت complete
+	filter := bson.M{"_id": objectID}
+	update := bson.M{"$set": bson.M{"completed": newCompleteStatus}}
+
+	result, err := collection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if result.MatchedCount == 0 {
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Todo not found"})
+	}
+
+	// دریافت اطلاعات به‌روز شده
+	updatedTodo := bson.M{}
+	err = collection.FindOne(context.Background(), filter).Decode(&updatedTodo)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(http.StatusOK).JSON(updatedTodo)
 }
 
 func DeleteTodo(c fiber.Ctx) error {
