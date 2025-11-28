@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:6-jammy
+    container_name: mongodb
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - ./mongodb:/data/db
+      - ./mongoconfig:/data/configdb
+    networks:
+      - backend
+  todo-api:
+    image: todo-app:v1.0.0 
+    container_name: todo-api
+    restart: always
+    depends_on:
+      - "mongodb"
+    #env_file:
+    #  - .env
+    ports:
+      - "5000:5000"
+    environment:
+      APP_PORT: 5000
+      MONGODB_URI: mongodb://admin:admin@mongodb:27017/GoReact?authSource=admin&authMechanism=SCRAM-SHA-256
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

@@ -63,7 +63,7 @@ func main() {
 	//}))
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"http://localhost:5173"},
+		AllowOrigins: []string{"*"},
 		AllowHeaders: []string{"Origin,Content-Type,Accept"},
 	}))
 
@@ -72,7 +72,7 @@ func main() {
 	app.Patch("/api/todos/:id", UpdateTodo)
 	app.Delete("/api/todos/:id", DeleteTodo)
 
-	port := os.Getenv("PORT")
+	port := os.Getenv("APP_PORT")
 
 	err = app.Listen(":" + port)
 	if err != nil {
