@@ -9,7 +9,6 @@ services:
       - 27017:27017
     volumes:
       - ./mongodb:/data/db
-      - ./mongoconfig:/data/configdb
     networks:
       - backend
   todo-api:
@@ -27,7 +26,19 @@ services:
       MONGODB_URI: mongodb://admin:admin@mongodb:27017/GoReact?authSource=admin&authMechanism=SCRAM-SHA-256
     networks:
       - backend
-
+  frontend:
+    image: todo-web:v1.0.0
+    container_name: frontend
+    restart: always
+    depends_on:
+      - "todo-api"
+    ports:
+      - 80:80
+    environment:
+      VITE_API_URL: "http://localhost:5000/api"
+    networks:
+      - backend
+    
 networks:
   backend:
     driver: bridge
