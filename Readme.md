@@ -9,42 +9,47 @@
 
 ### 1. Build Backend API Image
 ```bash
-➤ cd todo-api 
-➤ docker build -t todo-api:v1.0.0 .
+➤ cd backend
+➤ docker build -t 192.168.240.141:5000/todo-api:v1.1.0 .
 ```
 ### 2. Build Frontend Image
 ```bash
-➤ cd web 
-➤ docker build -t todo-web:v1.0.0 .
+➤ cd frontend
+➤ docker build -t 192.168.240.141:5000/todo-web:v1.1.0 .
+
+➤ dockeer push 192.168.240.141:5000/todo-api:v1.1.0
+➤ docker push 192.168.240.141:5000/todo-web:v1.1.0
 ```
-### 3. Run Docker Compose
+
+### 3. Run Docker Stack
 ```bash
-➤ docker compose up -d
+➤ docker stack deploy -c docker-compose.yaml GoReact
 ```
 ## Application URLs
 
--   **Frontend**: [http://localhost:80](http://localhost/)
+-   **Frontend**: [http://goreact.local](http://goreact.local/)
     
--   **Backend API**: [http://localhost:5000](http://localhost:5000/)
+-   **Backend API**: [http://api.goreact.local](http://api.goreact.local/)
 
 ## Environment Variables
 
 The application uses the following environment variables:
 ### Frontend (.env)
 ```bash
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://api.goreact.local
 ```
 ### Backend
 
 -   `DATABASE_URL`: Database connection string
     
--   `PORT`: Server port (default: 5000)
+-   `PORT`: Server port (default: 4000)
 
 ## Project Structure
 ```bash
 todo-app/
 ├── frontend/          # React Vite application
 ├── backend/           # Golang API server
+├── nginx         
 ├── docker-compose.yml
 └── README.md
 ```
