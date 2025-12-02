@@ -9,12 +9,12 @@
 
 ### 1. Build Backend API Image
 ```bash
-➤ cd todo-api 
+➤ cd backend
 ➤ docker build -t todo-api:v1.0.0 .
 ```
 ### 2. Build Frontend Image
 ```bash
-➤ cd web 
+➤ cd frontend
 ➤ docker build -t todo-web:v1.0.0 .
 ```
 ### 3. Run Docker Compose
