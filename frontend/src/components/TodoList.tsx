@@ -2,7 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import TodoItem from "./TodoItem";
 import { Flex, Spinner, Stack, Text } from "@chakra-ui/react";
 
-const BASE_URL = "http://localhost:5000/api"; // آدرس سرور
+// const BASE_URL = "http://localhost:5000/api"; // آدرس سرور
+
+const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
 
 type Todo = {
 	_id: string;

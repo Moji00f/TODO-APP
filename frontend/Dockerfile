@@ -4,7 +4,7 @@ COPY package*.json ./
 RUN npm config set registry https://registry.npmmirror.com/ && \
     npm install --include=dev
 COPY . .
-ENV VITE_API_URL=http://localhost:5000/api
+ENV VITE_API_URL=http://api.goreact.local
 RUN npm run build
 
 FROM nginx:1.25.1-alpine
